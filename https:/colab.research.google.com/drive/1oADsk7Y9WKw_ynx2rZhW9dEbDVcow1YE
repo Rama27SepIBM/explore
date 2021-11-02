@@ -1,0 +1,81 @@
+import pandas as pd
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+%matplotlib inline
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score,confusion_matrix,f1_score,roc_curve,auc
+from sklearn.feature_selection import RFE
+megakkart = pd.read_csv("train.csv")
+megakkart.head()
+##check the data discriptions
+megakkart.info()
+#see the data sample
+print("weekend data sample",megakkart['weekend'].unique())
+print("Month data sample",megakkart['month'].unique())
+print("traffictype data sample",megakkart['traffictype'].unique())
+print("browser data sample",megakkart['browser'].unique())
+print("region data sample",megakkart['region'].unique())
+print("operatingsystems data sample",megakkart['operatingsystems'].unique())
+print("Visitortype data sample",megakkart['visitortype'].unique())
+##Applying label Encoding for month
+monthname=['Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec']
+monthid=[1,2,3,4,5,6,7,8,9,10,11,12]
+monthdic={}
+
+for key in monthname:
+    for value in monthid:
+        monthdic[key] = value
+        monthid.remove(value)
+        break
+megakkart.month = megakkart.month.map(monthdic) ##applying lebel encoing on month column
+##Applying onehot encoing on visitor type
+visitortype=pd.get_dummies(megakkart["visitortype"],prefix='visitortype',drop_first=True)
+megakkart=pd.concat([megakkart,pd.get_dummies(megakkart["visitortype"],prefix='visitortype',dummy_na=False)],axis=1).drop(['visitortype'],axis=1)
+#converting all object type features
+weekenddic={False:0,True:1}
+megakkart.weekend = megakkart.weekend.map(weekenddic)
+megakkart['traffictype'].replace({'*':0},inplace=True)
+megakkart['traffictype']=pd.to_numeric(megakkart['traffictype'])
+megakkart['browser'].replace({'*':0},inplace=True)
+megakkart['browser']=pd.to_numeric(megakkart['browser'])
+megakkart['region']=pd.to_numeric(megakkart['region'])
+megakkart['operatingsystems'].replace({'*':0},inplace=True)
+megakkart['operatingsystems']=pd.to_numeric(megakkart['operatingsystems'])
+
+#post processing 
+megakkart.info()
+megatrain=megakkart.drop('session_id',axis=1).copy()
+#independent features
+X=megakkart.drop(["revenue","session_id"],axis=1).copy()
+y=megakkart.revenue.copy()
+#Correlation with output variable
+cor_target = abs(cor["revenue"])
+#Selecting highly correlated features
+relevant_features = cor_target[cor_target>0.2]
+relevant_features
+Naive Bayes - Gaussian NB
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.25, random_state = 33,stratify=y)
+from sklearn.naive_bayes import GaussianNB
+nb = GaussianNB()
+nb.fit(X_train, y_train)
+y_pred = nb.predict(X_test)
+y_pred=y_pred.reshape(-1,1)
+y_pred
+y_test
+predicted = pd.DataFrame()
+predicted['preds'] = nb.predict(X_test)
+y_test1 = pd.DataFrame(y_test)
+y_test1['index1'] = y_test1.index
+y_test1 = y_test1.reset_index()
+y_test1 = pd.concat([y_test1,predicted],axis=1)
+y_test1.set_index('index1')
+Test_pred = pd.merge(X_test,y_test1,how = 'inner',left_index = True, right_index = True)
+Test_pred.head()
+Test_pred[["revenue",'preds']].head()
+print("accuracy Score=",accuracy_score(y_test,y_pred)*100)
+print("F1 score for NB Model",f1_score(y_test,y_pred))
+print("Confusion Matrix of the model",'\n',confusion_matrix(y_test,y_pred))
